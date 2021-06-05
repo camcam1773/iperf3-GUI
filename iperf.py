@@ -7,24 +7,29 @@ N Waterton V 1.1 26th April 2018: Added geographic data
 N Waterton V 1.2 4th May 2018: Added Yandex maps service due to impending google API key requirement.
 '''
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
 
 __VERSION__ = __version__ = '1.1'
 
-import subprocess, sys, os, tempfile
-from platform import system as system_name  # Returns the system/OS name
-import time
-import ConfigParser
-import math
-import json
-import urllib2
-import Tkinter as tk
-import ttk
-import meter as m
-import re
 import base64
+import configparser
+import json
+import re
+import subprocess
+import sys
+import tempfile
+import time
+import tkinter as tk
+import tkinter.ttk
+import urllib.error
+import urllib.parse
+import urllib.request
+from platform import system as system_name  # Returns the system/OS name
+
+import meter as m
+
 HAVE_PING = False
 try:
     import pyping
@@ -103,7 +108,7 @@ class Mainframe(tk.Frame):
         self.read_config_file() #load data if config file exists
         self.get_ip_info(self.local_ip)
         #add any new servers in config file
-        for k in self.ip_info.keys():
+        for k in list(self.ip_info.keys()):
             new_server = self.ip_info[k].get('server', None)
             self.print('Checking server: %s' % new_server)
             if new_server not in self.server_list and new_server is not None and new_server != self.local_ip:
@@ -175,13 +180,13 @@ class Mainframe(tk.Frame):
         self.meter.grid(row=5, column=0, columnspan=4)
  
         tk.Label(self, text="Server:").grid(row=6, sticky=tk.E)
-        self.ipaddress= ttk.Combobox(self, textvariable=self.server, values=self.server_list, width=39)
+        self.ipaddress= tkinter.ttk.Combobox(self, textvariable=self.server, values=self.server_list, width=39)
         self.ipaddress.current(0)
         self.ipaddress.bind("<<ComboboxSelected>>", self.servercalback)
         self.ipaddress.grid(row=6, column=1, columnspan=2, sticky=tk.W)
         self.servercalback()    #update current displayed map (if enabled)
         
-        self.port= ttk.Combobox(self, textvariable=self.server_port, values=self.port_list, width=4)
+        self.port= tkinter.ttk.Combobox(self, textvariable=self.server_port, values=self.port_list, width=4)
         if self.arg.port in self.port_list:
             self.port.current(self.port_list.index(self.arg.port))
         else:
@@ -191,7 +196,7 @@ class Mainframe(tk.Frame):
         self.port.grid(row=6, column=3, sticky=tk.W)
         
         tk.Label(self, text="Progress:").grid(row=7, sticky=tk.E)
-        self.progress_bar = ttk.Progressbar(self
+        self.progress_bar = tkinter.ttk.Progressbar(self
         ,orient="horizontal"
         ,length=325
         , mode="determinate")
@@ -221,7 +226,7 @@ class Mainframe(tk.Frame):
             self.map_box.grid(row=8, column=3, sticky=tk.W)
         
         tk.Label(self, text="Range:").grid(row=9, sticky=tk.W)
-        self.range_box = ttk.Combobox(self, textvariable=self.range, values=self.ranges, width=4)
+        self.range_box = tkinter.ttk.Combobox(self, textvariable=self.range, values=self.ranges, width=4)
         self.range_box.grid(row=10, column=0, rowspan=2)
         
         self.duration_scale = tk.Scale(self,width = 15 ,from_ = 10, to = 30
@@ -278,9 +283,9 @@ class Mainframe(tk.Frame):
         return res is not None
         
     def write_config_file(self, file="./config.ini"):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.add_section('Servers')
-        for ip_address, info in self.ip_info.items():
+        for ip_address, info in list(self.ip_info.items()):
             self.ip_info[self.get_real_ip(ip_address)]['saved'] = True
             Config.set('Servers',self.get_real_ip(ip_address),json.dumps(self.ip_info[self.get_real_ip(ip_address)]))
             self.print('wrote data for %s to %s' % (self.get_real_ip(ip_address), file))
@@ -291,7 +296,7 @@ class Mainframe(tk.Frame):
                 
     def read_config_file(self, file="./config.ini"):
         #read config file
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         try:
             Config.read(file)
             self.print('read config file')
@@ -316,11 +321,11 @@ class Mainframe(tk.Frame):
         url = 'http://checkip.dyndns.org'
         self.print('getting local ip address fron net service: %s' % url)
         try:
-            req = urllib2.urlopen(url)
-            grab = re.findall('([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)', req.read())
+            req = urllib.request.urlopen(url)
+            grab = re.findall('([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)', req.read().decode('utf-8'))
             self.print('local ip is: %s' % grab[0])
             req.close()
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             self.print("Error: %s" % e)
         
         return grab[0]
@@ -338,13 +343,13 @@ class Mainframe(tk.Frame):
         else:
             server_name = self.local_ip if self.is_ip_private(self.server.get()) else self.server.get()
         ip_address = self.get_real_ip(ip_address)
-        if ip_address in self.ip_info.keys():
+        if ip_address in list(self.ip_info.keys()):
             return self.ip_info[ip_address]
         result = None
         url='https://ezcmd.com/apps/api_ezip_locator/lookup/GUEST_USER/-1/%s' % ip_address
         self.print('getting remote ip address info fron net service: %s' % url)
         try:
-            req = urllib2.urlopen(url)
+            req = urllib.request.urlopen(url)
             data = req.read()
             result = json.loads(data)
             self.ip_info[ip_address] = result
@@ -354,7 +359,7 @@ class Mainframe(tk.Frame):
             self.ip_info[ip_address]['saved'] = False
             self.print(json.dumps(result, indent=2))
             req.close()
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             self.print("Error: %s" % e)
         
         return result
@@ -387,7 +392,7 @@ class Mainframe(tk.Frame):
         
     def get_distance(self, ip_address):
         if ip_address == '' or self.local_ip == '': return -1
-        if ip_address in self.ip_info.keys():
+        if ip_address in list(self.ip_info.keys()):
             if self.ip_info[ip_address]['distance'].get(self.local_ip, None) is not None:
                 return self.ip_info[ip_address]['distance'][self.local_ip]
         result = -1
@@ -437,10 +442,10 @@ class Mainframe(tk.Frame):
             
             self.print('getting map from google: %s' % url)
         try:
-            req = urllib2.urlopen(url)
+            req = urllib.request.urlopen(url)
             b64_data = base64.encodestring(req.read())
             req.close()
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             self.print("Error: %s" % e)
             return None
         return b64_data
@@ -477,7 +482,7 @@ class Mainframe(tk.Frame):
             # Pinging
             p = subprocess.Popen(command.split(), stdout = subprocess.PIPE)
             while True:
-                result = p.stdout.readline()
+                result = p.stdout.readline().decode('utf-8')
                 self.print('ping: %s' % result)
                 if result == '':
                     break
@@ -542,7 +547,7 @@ class Mainframe(tk.Frame):
             return
         self.show_message(message)
         self.ip_address = self.get_real_ip(ip_address)    #current ip address of server (use external for private address)
-        if self.ip_address not in self.ip_info.keys():
+        if self.ip_address not in list(self.ip_info.keys()):
             self.get_ip_info(self.ip_address)
         self.show_city_info(self.ip_address)
         self.updategeography()
@@ -629,7 +634,7 @@ class Mainframe(tk.Frame):
         total = 0
         while not self.done:
             try:
-                line = capture.readline()
+                line = capture.readline().decode('utf-8')
                 if self.arg.verbose and line: self.print(line.strip())
                 if 'Done' in line:
                     break
@@ -650,8 +655,8 @@ class Mainframe(tk.Frame):
                 else:
                     if (int(self.threads.get()) > 1 and line.startswith('[SUM]')) or (int(self.threads.get()) == 1 and 'bits/sec' in line):
                         self.progress_bar["value"] += 1
-                        speed = float(line.decode('utf-8').replace('[ ','[').replace('[ ','[').split()[5])
-                        units = line.decode('utf-8').replace('[ ','[').replace('[ ','[').split()[6]
+                        speed = float(line.replace('[ ','[').replace('[ ','[').split()[5])
+                        units = line.replace('[ ','[').replace('[ ','[').split()[6]
                         if 'receiver' in line:
                             total = speed
                             self.print("Total: %s %s" % (total, units))
@@ -722,7 +727,7 @@ class Mainframe(tk.Frame):
         self.geography_label.config(text='')
         self.meter.max_val = 0
         server_name = self.local_ip if self.is_ip_private(self.server.get()) else self.server.get()
-        for k in self.ip_info.keys(): 
+        for k in list(self.ip_info.keys()): 
             self.print('checking ip address: %s, server name: %s target: %s' % (k, self.ip_info[k].get('server', None), server_name))
             if server_name == self.ip_info[k].get('server', None):
                 self.print('FOUND! ip address: %s' % k)
