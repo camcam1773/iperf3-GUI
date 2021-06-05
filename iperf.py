@@ -441,12 +441,12 @@ class Mainframe(tk.Frame):
             self.print('getting map from google: %s' % url)
         try:
             req = urllib.request.urlopen(url)
-            b64_data = req.read()
+            map_image = base64.b64encode(req.read()).decode()
             req.close()
         except urllib.error.URLError as e:
             self.print("Error: %s" % e)
             return None
-        return b64_data
+        return map_image
 
     def ping(self, host):
         """
@@ -710,7 +710,7 @@ class Mainframe(tk.Frame):
                     if self.arg.google_api_key is not None:
                         self.map_gif = tk.PhotoImage(data=self.map)
                     else:
-                        self.map_gif = self.ImageTk.PhotoImage(self.Image.open(self.io.BytesIO(self.map)))
+                        self.map_gif = self.ImageTk.PhotoImage(self.Image.open(self.io.BytesIO(base64.b64decode(self.map.encode()))))
             else:
                 self.map_gif = tk.PhotoImage(data=self.no_map)
             self.meter.grid(row=5, column=0, columnspan=2)
