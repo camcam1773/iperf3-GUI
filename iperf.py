@@ -69,6 +69,9 @@ class Mainframe(tk.Frame):
         self.meter_size = 300 #meter is square
         self.no_response = 'No Response from iperf3 Server'
         self.server_list = ['iperf.he.net',
+                            'iperf.par2.as49434.net',
+                            'paris.testdebit.info',
+                            'speed.as208196.net',
                             'bouygues.iperf.fr',
                             'ping.online.net',
                             'ping-90ms.online.net',
@@ -76,7 +79,8 @@ class Mainframe(tk.Frame):
                             'iperf.volia.net',
                             'iperf.it-north.net',
                             'iperf.biznetnetworks.com',
-                            #speedtest.wtnet.de,
+                            'speedtest.uztelecom.uz',
+                            'iperf.it-north.net',
                             'iperf.scottlinux.com']
         self.server_list[0:0] = self.arg.ip_address
         self.port_list   = ['5200',
@@ -88,7 +92,9 @@ class Mainframe(tk.Frame):
                             '5206',
                             '5207',
                             '5208',
-                            '5209']
+                            '5209',
+                            '5002',
+                            '9200']
         self.max_options = ['OFF', 'Track Needle', 'Hold Peak']     
         self.max_range = 1000
         self.min_range = 10
@@ -443,7 +449,7 @@ class Mainframe(tk.Frame):
             self.print('getting map from google: %s' % url)
         try:
             req = urllib.request.urlopen(url)
-            b64_data = base64.encodestring(req.read())
+            b64_data = req.read()
             req.close()
         except urllib.error.URLError as e:
             self.print("Error: %s" % e)
@@ -702,7 +708,7 @@ class Mainframe(tk.Frame):
                     if self.arg.google_api_key is not None:
                         self.map_gif = tk.PhotoImage(data=self.map)
                     else:
-                        self.map_gif = self.ImageTk.PhotoImage(self.Image.open(self.io.BytesIO(base64.decodestring(self.map))))
+                        self.map_gif = self.ImageTk.PhotoImage(self.Image.open(self.io.BytesIO(self.map)))
             else:
                 self.map_gif = tk.PhotoImage(data=self.no_map)
             self.meter.grid(row=5, column=0, columnspan=2)
